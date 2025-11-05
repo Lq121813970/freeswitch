@@ -59,13 +59,13 @@ RUN groupadd -r freeswitch --gid=900 && \
     echo "freeswitch ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/freeswitch && \
     chmod 440 /etc/sudoers.d/freeswitch
 
-# 安装 gosu（安全降权，适配 CentOS 7 + Freeswitch 1.10）
+# 安装 gosu（安全降权，使用国内加速源避免 GitHub 下载问题）
 RUN set -eux; \
     ARCH="$(uname -m)"; \
     if [ "$ARCH" = "x86_64" ]; then GOSU_ARCH="amd64"; fi; \
-    # 下载适配的 gosu 版本（1.14 兼容 CentOS 7 和 Freeswitch 1.10）
-    wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.14/gosu-$GOSU_ARCH" && \
-    wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/1.14/gosu-$GOSU_ARCH.asc" && \
+    # 国内加速源：阿里云 OSS 缓存，避免 GitHub 重定向和网络超时
+    wget -O /usr/local/bin/gosu "https://gosu-mirror.oss-cn-beijing.aliyuncs.com/1.14/gosu-$GOSU_ARCH" && \
+    wget -O /usr/local/bin/gosu.asc "https://gosu-mirror.oss-cn-beijing.aliyuncs.com/1.14/gosu-$GOSU_ARCH.asc" && \
     # 拉取并验证 gosu 密钥
     gpg2 --keyserver hkp://keyserver.ubuntu.com:80 \
          --timeout 10 \
