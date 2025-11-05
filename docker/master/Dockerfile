@@ -1,5 +1,5 @@
 # vim:set ft=dockerfile:
-FROM centos:7.9.2009
+FROM registry.cn-hangzhou.aliyuncs.com/aliyun_open/centos:7.9.2009
 
 # 配置阿里云内网 yum 源（优先内网，兼顾公网）
 RUN rm -f /etc/yum.repos.d/*.repo && \
