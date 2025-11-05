@@ -7,7 +7,7 @@ RUN rm -f /etc/yum.repos.d/*.repo && \
     curl -o /etc/yum.repos.d/epel.repo https://mirrors.aliyun.com/repo/epel-7.repo && \
     yum clean all && yum makecache fast
 
-# 安装 Freeswitch 1.10 依赖（相比 1.6 补充新增依赖）
+# 安装 Freeswitch 1.10 依赖（修正语法错误，确保所有包在同一命令中）
 RUN yum install -y \
     epel-release \
     wget \
@@ -45,9 +45,9 @@ RUN yum install -y \
     fontconfig-devel \
     libicu-devel \
     jemalloc-devel \
-    libedit-devel \  # Freeswitch 1.10 新增依赖
-    json-c-devel \   # Freeswitch 1.10 新增依赖
-    libatomic \      # 解决 1.10 编译/运行时原子操作依赖
+    libedit-devel \
+    json-c-devel \
+    libatomic \
     which \
     file \
     sudo \
