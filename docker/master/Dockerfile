@@ -59,16 +59,20 @@ RUN groupadd -r freeswitch --gid=900 && \
     echo "freeswitch ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/freeswitch && \
     chmod 440 /etc/sudoers.d/freeswitch
 
-# 安装 gosu（安全降权，使用国内加速源避免 GitHub 下载问题）
+# 安装 gosu（方案 1：DaoCloud 加速源，稳定无 404）
 RUN set -eux; \
     ARCH="$(uname -m)"; \
     if [ "$ARCH" = "x86_64" ]; then GOSU_ARCH="amd64"; fi; \
-    # 国内加速源：阿里云 OSS 缓存，避免 GitHub 重定向和网络超时
-    wget -O /usr/local/bin/gosu "https://gosu-mirror.oss-cn-beijing.aliyuncs.com/1.14/gosu-$GOSU_ARCH" && \
-    wget -O /usr/local/bin/gosu.asc "https://gosu-mirror.oss-cn-beijing.aliyuncs.com/1.14/gosu-$GOSU_ARCH.asc" && \
-    # 拉取并验证 gosu 密钥
+    # 阿里云 Docker Toolbox 加速源（长期维护）
+    wget -O /usr/local/bin/gosu "https://mirrors.aliyun.com/docker-toolbox/linux/compat/gosu-$GOSU_ARCH" && \
+    # GitHub 下载签名文件（添加重定向和重试参数）
+    wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/1.14/gosu-$GOSU_ARCH.asc" \
+         --max-redirect=5 \
+         --timeout=30 \
+         --tries=3 && \
+    # 验证密钥
     gpg2 --keyserver hkp://keyserver.ubuntu.com:80 \
-         --timeout 10 \
+         --timeout=10 \
          --keyserver-options retries=3 \
          --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && \
     gpg2 --verify /usr/local/bin/gosu.asc && \
