@@ -53,9 +53,9 @@ RUN yum install -y \
     sudo \
     && yum clean all && rm -rf /var/cache/yum/*
 
-# 显式设置用户/组 ID（保持与原版本一致：gid=999, uid=999）
-RUN groupadd -r freeswitch --gid=999 && \
-    useradd -r -g freeswitch --uid=999 -m -d /home/freeswitch freeswitch && \
+# 显式设置用户/组 ID（调整为 GID=900、UID=900，避免与系统组冲突）
+RUN groupadd -r freeswitch --gid=900 && \
+    useradd -r -g freeswitch --uid=900 -m -d /home/freeswitch freeswitch && \
     echo "freeswitch ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/freeswitch && \
     chmod 440 /etc/sudoers.d/freeswitch
 
@@ -103,7 +103,7 @@ RUN set -eux; \
 # 配置资源限制（优化 1.10 性能，保持原 limits 逻辑）
 COPY build/freeswitch.limits.conf /etc/security/limits.d/
 RUN chmod 644 /etc/security/limits.d/freeswitch.limits.conf && \
-    # 给 Freeswitch 1.10 目录授权（目录结构与 1.6 一致，无需调整）
+    # 给 Freeswitch 1.10 目录授权（使用新的 freeswitch 用户/组）
     chown -R freeswitch:freeswitch /etc/freeswitch /var/lib/freeswitch /var/log/freeswitch && \
     chmod -R 755 /etc/freeswitch /var/lib/freeswitch /var/log/freeswitch && \
     # 1.10 新增日志目录权限适配
