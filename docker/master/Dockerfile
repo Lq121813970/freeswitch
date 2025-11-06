@@ -1,9 +1,4 @@
 # vim:set ft=dockerfile:
-# 登录 Docker Hub 认证（解决官方镜像限速）
-ARG DOCKER_HUB_USER
-ARG DOCKER_HUB_TOKEN
-RUN echo "$DOCKER_HUB_TOKEN" | docker login --username "$DOCKER_HUB_USER" --password-stdin
-
 # 拉取 Docker 官方 CentOS 7.9 镜像
 FROM centos:7.9.2009
 
