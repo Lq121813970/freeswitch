@@ -44,21 +44,10 @@ RUN localedef -i en_US -f UTF-8 en_US.UTF-8 && \
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
-# 安装 Freeswitch（终极方案：EPEL 兼容版+强制安装+最小模块）
+# 安装 Freeswitch（语法修正：参数与安装包同列，无换行拆分）
 ENV FS_MAJOR 1.10
 RUN set -eux; \
-    # 关键：使用 EPEL 仓库中兼容的 Freeswitch 包，放弃官方源
-    yum install -y \
-        freeswitch \
-        freeswitch-core \
-        freeswitch-mod-sofia \
-        freeswitch-mod-dialplan-xml \
-        freeswitch-mod-commands \
-        freeswitch-libs \
-        --nogpgcheck \  # 强制忽略 GPG 校验和依赖冲突
-        --skip-broken \
-        --nobest; \     # 不要求安装最佳匹配的依赖，优先安装可用包
-    # 清理缓存，减小镜像体积
+    yum install -y freeswitch freeswitch-core freeswitch-mod-sofia freeswitch-mod-dialplan-xml freeswitch-mod-commands freeswitch-libs --nogpgcheck --skip-broken --nobest; \
     yum clean all && rm -rf /var/cache/yum/*
 
 # 配置资源限制+目录授权（适配最小安装路径）
