@@ -1,76 +1,48 @@
-# vim:set ft=dockerfile:
-ARG DEBIAN_VERSION=bookworm
-FROM debian:${DEBIAN_VERSION}
+FROM registry.cn-hangzhou.aliyuncs.com/nangrui/centos:centos7.9.2009
+RUN yum install vim git wget lrzsz -y \
+	$$ yum install -y https://files.freeswitch.org/repo/yum/centos-release/freeswitch-release-repo-0-1.noarch.rpm epel-release \
+	$$ yum install yum-utils \
+	$$ yum install -y yum-plugin-ovl centos-release-scl rpmdevtools \
+	$$ yum install autoconf automake libtool openssl* libtiff* libjpeg* -y \
+	$$ yum install gcc-c++ -y \
+	$$ yum install sqlite-devel -y \
+	$$ yum install libcurl-devel -y \
+	$$ yum install speex-devel -y \
+	$$ yum install ldns-devel -y \
+	$$ yum install libedit-devel -y \
+	$$ yum install yasm -y \
+	$$ yum install lua-devel -y \
+	$$ yum install opus-devel -y 
 
-# ARGs are cleared after every FROM
-# see: https://docs.docker.com/engine/reference/builder/#understand-how-arg-and-from-interact
-ARG DEBIAN_VERSION
-ARG TOKEN
+RUN git clone https://github.com/freeswitch/sofia-sip.git /usr/src/sofia-sip
+RUN git clone https://github.com/freeswitch/spandsp.git /usr/src/spandsp
+RUN git clone -b v1.11 https://github.com/signalwire/freeswitch.git /usr/src/freeswitch
 
-# By default, install the full set of FreeSWITCH packages.  Specify an alternative with:
-#   --build-arg="FS_META_PACKAGE=freeswitch-meta-vanilla"
-# alternatives include:
-#   freeswitch-meta-bare
-#   freeswitch-meta-vanilla
-#   freeswitch-meta-sorbet
-#   freeswitch-meta-all-dbg
-ARG FS_META_PACKAGE=freeswitch-meta-all
+RUN cd /usr/src/sofia-sip && ./bootstrap.sh && ./configure && make && make install
 
-# Source Dockerfile:
-# https://github.com/docker-library/postgres/blob/master/9.4/Dockerfile
+RUN cd /usr/src/spandsp && git checkout -b finecode20230705 0d2e6ac65e0e8f53d652665a743015a88bf048d4 && ./bootstrap.sh && ./configure && make && make install
 
-# explicitly set user/group IDs
-ARG FREESWITCH_UID=499
-ARG FREESWITCH_GID=499
-RUN groupadd -r freeswitch --gid=${FREESWITCH_GID} && useradd -r -g freeswitch --uid=${FREESWITCH_UID} freeswitch
-
-# make the "en_US.UTF-8" locale so freeswitch will be utf-8 enabled by default
-RUN apt-get update -qq \
-    && apt-get install -y --no-install-recommends ca-certificates gnupg2 gosu locales wget \
-    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-ENV LANG en_US.utf8
-
-# https://freeswitch.org/confluence/display/FREESWITCH/Debian
-# https://developer.signalwire.com/freeswitch/FreeSWITCH-Explained/Installation/Linux/Debian_67240088/
-
-RUN wget --no-verbose --http-user=signalwire --http-password=${TOKEN} \
-      -O /usr/share/keyrings/signalwire-freeswitch-repo.gpg \
-      https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg \
-    && echo "machine freeswitch.signalwire.com login signalwire password ${TOKEN}" > /etc/apt/auth.conf \
-    && echo "deb [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ ${DEBIAN_VERSION} main" > /etc/apt/sources.list.d/freeswitch.list \
-    && apt-get -qq update \
-    && apt-get install -y ${FS_META_PACKAGE} \
-    && apt-get purge -y --auto-remove \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-COPY docker-entrypoint.sh /
-# Add anything else here
-
-## Ports
-# Document ports used by this container
-### 8021 fs_cli, 5060 5061 5080 5081 sip and sips, 5066 ws, 7443 wss, 8081 8082 verto, 16384-32768, 64535-65535 rtp
-EXPOSE 8021/tcp
-EXPOSE 5060/tcp 5060/udp 5080/tcp 5080/udp
-EXPOSE 5061/tcp 5061/udp 5081/tcp 5081/udp
-EXPOSE 5066/tcp
-EXPOSE 7443/tcp
-EXPOSE 8081/tcp 8082/tcp
-EXPOSE 64535-65535/udp
-EXPOSE 16384-32768/udp
-
-# Volumes
-## Freeswitch Configuration
-VOLUME ["/etc/freeswitch"]
-## Tmp so we can get core dumps out
-VOLUME ["/tmp"]
-
-# Limits Configuration
-COPY    build/freeswitch.limits.conf /etc/security/limits.d/
-
-# Healthcheck to make sure the service is running
-SHELL       ["/bin/bash", "-c"]
-HEALTHCHECK --interval=15s --timeout=5s \
-    CMD  fs_cli -x status | grep -q ^UP || exit 1
-
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["freeswitch"]
+RUN cd /usr/src/freeswitch && ./bootstrap.sh -j
+RUN touch /etc/yum.repos.d/linuxtech.repo
+RUN echo -e "[linuxtech]\nname=LinuxTECH\nbaseurl=http://pkgrepo.linuxtech.net/el6/release/\nenabled=1\ngpgcheck=1\ngpgkey=http://pkgrepo.linuxtech.net/el6/release/RPM-GPG-KEY-LinuxTECH.NET\n" > /etc/yum.repos.d/linuxtech.repo
+RUN yum install libopus-devel  -y
+COPY ./build/modules.conf /usr/src/freeswitch/modules.conf
+RUN cd /usr/src/freeswitch && ./bootstrap.sh -j
+RUN yum install postgresql-devel -y
+RUN cd /usr/src && wget http://www.nangrui.com/libsndfile-1.0.28.tar.gz
+RUN cd /usr/src && tar zxvf libsndfile-1.0.28.tar.gz
+RUN cd /usr/src/libsndfile-1.0.28 && ./configure
+RUN cd /usr/src/libsndfile-1.0.28 && make && make install 
+RUN cp /usr/local/lib/pkgconfig/sndfile.pc /usr/lib64/pkgconfig
+RUN yum install yasm -y
+RUN yum install libshout-devel lame-devel libmpg123-devel -y
+RUN cd /usr/src/freeswitch && export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig && ./configure --enable-core-pgsql-support && make && make -j install && make -j cd-sounds-install && make -j cd-moh-install
+RUN yum install ncurses-devel make libpcap-devel pcre-devel openssl-devel git gcc autoconf automake  -y
+RUN echo -e "[irontec]\nname=Irontec RPMs repository\n" > /etc/yum.repos.d/irontec.repo
+RUN echo 'baseurl=http://packages.irontec.com/centos/$releasever/$basearch/' >> /etc/yum.repos.d/irontec.repo
+RUN rpm --import http://packages.irontec.com/public.key
+RUN yum install sngrep -y
+RUN yum install -y unixODBC unixODBC-devel mysql-connector-odbc
+RUN cd /usr/src/freeswitch && export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig && ./configure --enable-core-odbc-support && make && make install
+COPY ./build/conf /usr/local/freeswitch/conf
+CMD ["/usr/local/freeswitch/bin/freeswitch"]
