@@ -44,5 +44,4 @@ RUN rpm --import http://packages.irontec.com/public.key
 RUN yum install sngrep -y
 RUN yum install -y unixODBC unixODBC-devel mysql-connector-odbc
 RUN cd /usr/src/freeswitch && export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig && ./configure --enable-core-odbc-support && make && make install
-COPY ./build/conf /usr/local/freeswitch/conf
 CMD ["/usr/local/freeswitch/bin/freeswitch"]
