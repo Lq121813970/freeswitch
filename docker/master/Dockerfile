@@ -26,7 +26,6 @@ RUN cd /usr/src/freeswitch && ./bootstrap.sh -j
 RUN touch /etc/yum.repos.d/linuxtech.repo
 RUN echo -e "[linuxtech]\nname=LinuxTECH\nbaseurl=http://pkgrepo.linuxtech.net/el6/release/\nenabled=1\ngpgcheck=1\ngpgkey=http://pkgrepo.linuxtech.net/el6/release/RPM-GPG-KEY-LinuxTECH.NET\n" > /etc/yum.repos.d/linuxtech.repo
 RUN yum install libopus-devel  -y
-COPY ./build/modules.conf /usr/src/freeswitch/modules.conf
 RUN cd /usr/src/freeswitch && ./bootstrap.sh -j
 RUN yum install postgresql-devel -y
 RUN cd /usr/src && wget http://www.nangrui.com/libsndfile-1.0.28.tar.gz
