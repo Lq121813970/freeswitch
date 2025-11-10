@@ -1,4 +1,5 @@
-# 拉取 Docker 官方 CentOS 7.9 镜像
+# vim:set ft=dockerfile:
+# 拉取 Docker 官方 CentOS 7.9 镜像（无需认证，通过阿里云网络优化拉取）
 FROM centos:7.9.2009
 
 # 配置阿里云内网 yum 源（优先内网，确保依赖包拉取稳定）
@@ -44,7 +45,7 @@ RUN localedef -i en_US -f UTF-8 en_US.UTF-8 && \
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
-# 安装 Freeswitch（语法修正：参数与安装包同列，无换行拆分）
+# 安装 Freeswitch（无外部源依赖，强制容错安装）
 ENV FS_MAJOR 1.10
 RUN set -eux; \
     yum install -y freeswitch freeswitch-core freeswitch-mod-sofia freeswitch-mod-dialplan-xml freeswitch-mod-commands freeswitch-libs --nogpgcheck --skip-broken --nobest; \
@@ -53,7 +54,6 @@ RUN set -eux; \
 # 配置资源限制+目录授权（适配最小安装路径）
 COPY build/freeswitch.limits.conf /etc/security/limits.d/
 RUN chmod 644 /etc/security/limits.d/freeswitch.limits.conf && \
-    # 强制授权所有相关目录，避免权限问题
     chown -R freeswitch:freeswitch /etc/freeswitch /var/lib/freeswitch /var/log/freeswitch /var/run/freeswitch && \
     chmod -R 777 /etc/freeswitch /var/lib/freeswitch /var/log/freeswitch /var/run/freeswitch && \
     mkdir -p /var/run/freeswitch && \
@@ -64,11 +64,15 @@ COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh && \
     chown freeswitch:freeswitch /docker-entrypoint.sh
 
-# 暴露核心端口（仅保留必需端口，减少冲突）
-EXPOSE 8021/tcp  # FS CLI 管理端口
-EXPOSE 5060/tcp 5060/udp  # SIP 标准端口
-EXPOSE 5080/tcp 5080/udp  # SIP 备用端口
-EXPOSE 16384-32768/udp    # RTP 媒体端口
+# 暴露核心端口（语法合规，注释单独成行）
+# FS CLI 管理端口
+EXPOSE 8021/tcp
+# SIP 标准端口
+EXPOSE 5060/tcp 5060/udp
+# SIP 备用端口
+EXPOSE 5080/tcp 5080/udp
+# RTP 媒体端口
+EXPOSE 16384-32768/udp
 
 # 数据卷（仅保留核心配置和日志目录）
 VOLUME ["/etc/freeswitch", "/var/log/freeswitch"]
@@ -81,6 +85,6 @@ HEALTHCHECK --interval=20s --timeout=10s --retries=2 \
 # 直接用 freeswitch 用户启动
 USER freeswitch
 
-# 入口命令（简化启动参数）
+# 入口命令（简化启动参数，适配容器）
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["freeswitch", "-nonat", "-nosql", "-c"]  # -c 强制前台运行，适配容器
+CMD ["freeswitch", "-nonat", "-nosql", "-c"]
