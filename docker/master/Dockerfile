@@ -3,7 +3,7 @@ FROM centos:centos7.9.2009
 # 修复1：替换 CentOS 7 镜像源（用 curl 避免依赖 wget，基础镜像自带 curl）
 RUN mkdir -p /etc/yum.repos.d/backup && \
     mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/backup/ && \
-    # 用华为云 CentOS 7 归档源（稳定性优于阿里云，避免访问超时）
+    # 用华为云 CentOS 7 归档源（稳定性更高）
     curl -s -o /etc/yum.repos.d/CentOS-Base.repo https://repo.huaweicloud.com/repository/conf/CentOS-7-reg.repo && \
     # 禁用所有可能失效的仓库，避免安装卡住
     yum-config-manager --save --setopt=centos-sclo-rh.skip_if_unavailable=true && \
@@ -125,12 +125,6 @@ RUN git clone -b v1.11 https://github.com/signalwire/freeswitch.git && \
     make cd-moh-install && \
     # 清理编译缓存，减少镜像体积
     cd .. && rm -rf freeswitch/.git && rm -rf /usr/src/*/.git
-
-# 暴露 Freeswitch 默认端口（按需调整，生产环境建议仅开放必要端口）
-EXPOSE 5060/tcp 5060/udp  # SIP 协议端口
-EXPOSE 5080/tcp 5080/udp  # 备用 SIP 端口
-EXPOSE 8021/tcp           # FS_CLI 管理端口
-EXPOSE 16384-32768/udp    # RTP 媒体流端口
 
 # 修复5：前台启动 Freeswitch，确保容器不退出
 CMD ["/usr/local/freeswitch/bin/freeswitch", "-nonat", "-console", "-nort"]
